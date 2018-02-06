@@ -1,0 +1,16 @@
+com/amazonaws/lambda/hakunamatata/TestUtils$1.class
+com/amazonaws/lambda/hakunamatata/TestUtils$DynamodbEventMixin.class
+com/amazonaws/lambda/hakunamatata/TestUtils$DynamodbEventMixin$StreamRecordMixin.class
+com/amazonaws/lambda/hakunamatata/TestUtils.class
+com/amazonaws/lambda/hakunamatata/TestContext.class
+com/amazonaws/lambda/hakunamatata/TestUtils$DynamodbEventMixin$RecordMixin.class
+com/amazonaws/lambda/hakunamatata/LambdaFunctionHandlerTest.class
+com/amazonaws/lambda/hakunamatata/TestUtils$DateTimeSerializer.class
+com/amazonaws/lambda/hakunamatata/TestContext$TestLogger.class
+com/amazonaws/lambda/hakunamatata/TestUtils$TestJacksonMapperModule.class
+com/trendmicro/ds/restapi/DeepSecurityClientTest.class
+com/amazonaws/lambda/hakunamatata/TestUtils$DateTimeDeserializer.class
+com/amazonaws/lambda/hakunamatata/TestContext$1.class
+com/amazonaws/lambda/hakunamatata/TestUtils$DynamodbEventMixin$AttributeValueMixIn.class
+com/amazonaws/lambda/hakunamatata/TestUtils$UpperCaseRecordsPropertyNamingStrategy.class
+com/amazonaws/lambda/hakunamatata/HakunaMatataSpeechletTest.class

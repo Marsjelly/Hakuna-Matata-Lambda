@@ -1,0 +1,8 @@
+com/amazonaws/lambda/hakunamatata/Recipes.class
+com/trendmicro/ds/restapi/DeepSecurityClient$ExceptionalCallable.class
+com/trendmicro/ds/restapi/DeepSecurityClient$Operator.class
+com/trendmicro/ds/restapi/DeepSecurityClient.class
+com/amazonaws/lambda/hakunamatata/HakunaMatataRequestStreamHandler.class
+com/trendmicro/ds/restapi/DeepSecurityClient$ExceptionalFunction.class
+com/amazonaws/lambda/hakunamatata/HakunaMatataSpeechlet.class
+com/trendmicro/ds/restapi/DeepSecurityClient$ClientException.class
