@@ -17,6 +17,7 @@ import com.amazon.speech.slu.Intent;
 import com.amazon.speech.slu.Slot;
 import com.amazon.speech.speechlet.IntentRequest;
 import com.amazon.speech.speechlet.LaunchRequest;
+import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SessionEndedRequest;
 import com.amazon.speech.speechlet.SessionStartedRequest;
 import com.amazon.speech.speechlet.SpeechletResponse;
@@ -32,11 +33,14 @@ import com.trendmicro.ds.restapi.DeepSecurityClient;
 
 public class HakunaMatataSpeechlet implements SpeechletV2 {
 	private static final Logger	log			= LogManager.getLogger(HakunaMatataSpeechlet.class);
+	private Session				session;
 
 	@Override
 	public SpeechletResponse onIntent(SpeechletRequestEnvelope<IntentRequest> requestEnvelope) {
 		IntentRequest request = requestEnvelope.getRequest();
 		log.info("onIntent requestId={}, sessionId={}", request.getRequestId(), requestEnvelope.getSession().getSessionId());
+
+		setSession(requestEnvelope.getSession());
 
 		Intent intent = request.getIntent();
 		String intentName = (intent != null) ? intent.getName() : null;
@@ -48,6 +52,9 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 			} else if ("DSMAlert".equals(intentName)) {
 				log.info("onIntent DSMAlert");
 				return getDSMAlert(intent);
+			} else if ("MyName".equals(intentName)) {
+				log.info("onIntent MyName");
+				return setMyName(intent);
 			} else if ("AMAZON.HelpIntent".equals(intentName)) {
 				return getHelp();
 			} else if ("AMAZON.StopIntent".equals(intentName)) {
@@ -96,24 +103,35 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		log.info("onSessionStarted requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
 	}
 
+	private SpeechletResponse getResponse(String text, String title) {
+		return getResponse(text, title, true);
+	}
+
 	/**
 	 * Creates a {@code SpeechletResponse} for the RecipeIntent.
 	 *
 	 * @param intent intent for the request
 	 * @return SpeechletResponse spoken and visual response for the given intent
 	 */
-	private SpeechletResponse getResponse(String text, String title) {
-		log.info("getResponse: {}", text);
-		if (text != null) {
+	private SpeechletResponse getResponse(String text, String title, boolean shouldEndSession) {
+
+		String sessionName = this.session.getAttribute("Name") != null ? (String)this.session.getAttribute("Name") : "";
+		String speechText = sessionName.isEmpty() ? text : sessionName + ", " + text;
+
+		log.info("getResponse: {}", speechText);
+
+		if (speechText != null) {
 			// If we have the recipe, return it to the user.
 			PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-			outputSpeech.setText(text);
+			outputSpeech.setText(speechText);
 
 			SimpleCard card = new SimpleCard();
 			card.setTitle(title);
-			card.setContent(text);
+			card.setContent(speechText);
 
-			return SpeechletResponse.newTellResponse(outputSpeech, card);
+			SpeechletResponse res = SpeechletResponse.newTellResponse(outputSpeech, card);
+			res.setNullableShouldEndSession(shouldEndSession);
+			return res;
 		} else {
 			// We don't have a recipe, so keep the session open and ask the user for another
 			// item.
@@ -161,8 +179,7 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 
 		HostStatusSummaryElement s = statusSummary.getHostStatusSummary();
 		String recipe = Recipes.get("dsmStatusSummary", s.getCriticalHosts(), s.getWarningHosts(), s.getOnlineHosts(), s.getUnmanageHosts());
-		log.info("Receipe got: " + recipe);
-		return getResponse(recipe, "DSM Status");
+		return getResponse(recipe, "DSM Status", false);
 	}
 
 	protected SpeechletResponse getDSMAlert(Intent intent) throws Exception {
@@ -183,8 +200,20 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		}
 
 		String recipe = alerts.size() == 0 ? Recipes.get("dsmNoAlert") : (date == null ? Recipes.get("dsmAlertCount", alerts.size()) : Recipes.get("dsmAlertCountOnDate", alerts.size(), date));
-		log.info("Recipe got: " + recipe);
-		return getResponse(recipe, "DSM Alert Count");
+		return getResponse(recipe, "DSM Alert Count", false);
+	}
+
+	protected SpeechletResponse setMyName(Intent intent) {
+		Slot nameSlot = intent.getSlot("Name");
+		String name = (nameSlot != null) ? nameSlot.getValue() : "";
+		if (name != null && !name.isEmpty()) {
+			getSession().setAttribute("Name", name);
+			String recipe = Recipes.get("WelcomeName");
+			return getResponse(recipe, "Welcome to Hakuna Matata!", false);
+		} else {
+			String recipe = Recipes.get("WelcomeName");
+			return getResponse(recipe, "Welcome to Hakuna Matata!", true);
+		}
 	}
 
 	private DeepSecurityClient getDeepSecurityClient() throws IOException {
@@ -193,5 +222,13 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		DeepSecurityClient dsClient = new DeepSecurityClient(prop.getProperty("dsm.url"), prop.getProperty("dsm.user"), prop.getProperty("dsm.password"), null);
 		dsClient.disableTrustManager();
 		return dsClient;
+	}
+
+	public Session getSession() {
+		return session;
+	}
+
+	public void setSession(Session session) {
+		this.session = session;
 	}
 }

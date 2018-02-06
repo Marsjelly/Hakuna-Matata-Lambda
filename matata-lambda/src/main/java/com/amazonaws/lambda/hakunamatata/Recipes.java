@@ -18,6 +18,7 @@ public final class Recipes {
 		recipes.put("dsmNoAlert", "No alert has been raised. Very healthy! Great!");
 		recipes.put("dsmAlertCount", "Your DSM is having %d alerts. Buddy, it's okay. Everything will be fine. Hakuna Matata!");
 		recipes.put("dsmAlertCountOnDate", "Your DSM raised %d alerts on %t. Let bygones be bygones!");
+		recipes.put("WelcomeName", "Welcome to Hakuna Matata! What can I do for you?");
 	}
 
 	public static String get(String item, Object... strings) {
