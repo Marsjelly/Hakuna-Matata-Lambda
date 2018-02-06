@@ -1,0 +1,9 @@
+DSMStatus DSM status
+DSMStatus what is DSM's status
+DSMStatus how is DSM
+DSMAlert how many alerts
+DSMAlert how many alerts {Date}
+DSMAlert how many alerts on {Date}
+DSMAlert how many alerts were raised on {Date}
+MyName I am {Name}
+MyName This is {Name}
