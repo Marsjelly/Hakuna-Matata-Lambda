@@ -47,7 +47,7 @@ public abstract class Suggestion {
 
 			@Override
 			String getSuggestionText() {
-				return "Creating and adding a new DSM node into the cluster.";
+				return "Creating and adding a new DSM node into the cluster";
 			}
 
 			@Override
@@ -66,7 +66,7 @@ public abstract class Suggestion {
 
 			@Override
 			String getSuggestionText() {
-				return "Adding more memory for your DSM server.";
+				return "Adding more memory for your DSM server";
 			}
 
 			@Override
@@ -86,7 +86,7 @@ public abstract class Suggestion {
 
 			@Override
 			String getSuggestionText() {
-				return "Forgetting about it.";
+				return "Forgetting about it";
 			}
 
 			@Override
@@ -112,8 +112,9 @@ public abstract class Suggestion {
 		StringBuilder sb = new StringBuilder();
 		int i = 1;
 		for (Suggestion suggestion : suggestions) {
-			sb.append("Option " + i + " ");
+			sb.append("<p>Option <emphasis level=\"strong\">" + i + "</emphasis></p><p>");
 			sb.append(suggestion.getSuggestionText());
+			sb.append("</p>");
 			i++;
 		}
 		return sb.toString();

@@ -14,13 +14,14 @@ public final class Recipes {
 	}
 
 	static {
-		recipes.put("dsmStatusSummary", "Your DSM is having %d computers in critical state, %d computers in warning state, %d computers in managed state and %d computers in unmanaged state.");
+		recipes.put("dsmStatusSummary",
+			"Your DSM is having %d computers in critical state, <break time=\"300ms\"/>%d computers in warning state, <break time=\"300ms\"/>%d computers in managed state <break time=\"300ms\"/>and %d computers in unmanaged state.");
 		recipes.put("dsmNoAlert", "No alert has been raised. Very healthy! Great!");
-		recipes.put("dsmAlertCount", "Your DSM is having %d alerts. Buddy, it's okay. Everything will be fine. Hakuna Matata!");
+		recipes.put("dsmAlertCount", "Your DSM is having %d alerts. <break time=\"300ms\"/> Buddy, it's okay. Everything will be fine. Hakuna Matata!");
 		recipes.put("dsmAlertCountOnDate", "Your DSM raised %d alerts on %t. Let bygones be bygones!");
 		recipes.put("WelcomeName", "Welcome to Hakuna Matata! What can I do for you?");
-		recipes.put("showAlert", "The alert raised at %tR is %s.");
-		recipes.put("showSuggestions", "My suggestion is: %s. Please choose one.");
+		recipes.put("showAlert", "The alert raised at %tR is <break time=\"300ms\"/><emphasis level=\"strong\">%s</emphasis>.");
+		recipes.put("showSuggestions", "My suggestion is: %s Please choose one.");
 		recipes.put("showNoSuggestion", "Sorry, I don't have any suggestion to this. What else can I help you?");
 		recipes.put("NoAction", "Sorry, I don't know what to do.");
 	}
