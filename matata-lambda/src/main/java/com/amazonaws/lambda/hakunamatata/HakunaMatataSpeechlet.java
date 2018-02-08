@@ -3,6 +3,7 @@ package com.amazonaws.lambda.hakunamatata;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -35,6 +36,13 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 	private static final Logger	log			= LogManager.getLogger(HakunaMatataSpeechlet.class);
 	private Session				session;
 
+	protected enum QuestionType {
+		DSMStatus,
+		DSMAlert,
+		ShowFirstAlert,
+		Suggestion
+	}
+
 	@Override
 	public SpeechletResponse onIntent(SpeechletRequestEnvelope<IntentRequest> requestEnvelope) {
 		IntentRequest request = requestEnvelope.getRequest();
@@ -55,6 +63,12 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 			} else if ("MyName".equals(intentName)) {
 				log.info("onIntent MyName");
 				return setMyName(intent);
+			} else if ("ShowFirstAlert".equals(intentName)) {
+				log.info("onIntent ShowAlert");
+				return showFirstAlert(intent);
+			} else if ("Suggestion".equals(intentName)) {
+				log.info("onIntent Suggestion");
+				return getSuggestion(intent);
 			} else if ("AMAZON.HelpIntent".equals(intentName)) {
 				return getHelp();
 			} else if ("AMAZON.StopIntent".equals(intentName)) {
@@ -82,7 +96,7 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 	public SpeechletResponse onLaunch(SpeechletRequestEnvelope<LaunchRequest> requestEnvelope) {
 		log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
 
-		String speechOutput = "Welcome to Hakuna Matata. Your Deep Security Manager intelligent robot.";
+		String speechOutput = "Welcome to Hakuna Matata. Your Deep Security Manager intelligent robot. May I know who this is?";
 		// If the user either does not reply to the welcome message or says
 		// something that is not understood, they will be prompted again with this text.
 		String repromptText = "Hello, you there? Just yell \"Help Me\" if you don't know what to do.";
@@ -103,8 +117,8 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		log.info("onSessionStarted requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(), requestEnvelope.getSession().getSessionId());
 	}
 
-	private SpeechletResponse getResponse(String text, String title) {
-		return getResponse(text, title, true);
+	private SpeechletResponse getResponseNoEndSession(String text, String title) {
+		return getResponse(text, title, false);
 	}
 
 	/**
@@ -179,7 +193,7 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 
 		HostStatusSummaryElement s = statusSummary.getHostStatusSummary();
 		String recipe = Recipes.get("dsmStatusSummary", s.getCriticalHosts(), s.getWarningHosts(), s.getOnlineHosts(), s.getUnmanageHosts());
-		return getResponse(recipe, "DSM Status", false);
+		return getResponseNoEndSession(recipe, "DSM Status");
 	}
 
 	protected SpeechletResponse getDSMAlert(Intent intent) throws Exception {
@@ -200,7 +214,7 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		}
 
 		String recipe = alerts.size() == 0 ? Recipes.get("dsmNoAlert") : (date == null ? Recipes.get("dsmAlertCount", alerts.size()) : Recipes.get("dsmAlertCountOnDate", alerts.size(), date));
-		return getResponse(recipe, "DSM Alert Count", false);
+		return getResponseNoEndSession(recipe, "DSM Alert Count");
 	}
 
 	protected SpeechletResponse setMyName(Intent intent) {
@@ -209,11 +223,73 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		if (name != null && !name.isEmpty()) {
 			getSession().setAttribute("Name", name);
 			String recipe = Recipes.get("WelcomeName");
-			return getResponse(recipe, "Welcome to Hakuna Matata!", false);
+			return getResponseNoEndSession(recipe, "Welcome to Hakuna Matata!");
 		} else {
 			String recipe = Recipes.get("WelcomeName");
 			return getResponse(recipe, "Welcome to Hakuna Matata!", true);
 		}
+	}
+
+	protected SpeechletResponse showFirstAlert(Intent intent) throws Exception {
+		ListAlertsResponse alertsResponse;
+		try (DeepSecurityClient dsClient = getDeepSecurityClient()) {
+			alertsResponse = dsClient.listAlerts();
+		}
+		List<Alert> alerts = alertsResponse.getAlerts();
+		if (alerts.size() == 0) {
+			String recipe = Recipes.get("dsmNoAlert");
+			return getResponseNoEndSession(recipe, "Alert Status");
+		}
+
+		setLastQuestion(QuestionType.ShowFirstAlert);
+
+		Alert alert = alerts.get(0);
+		getSession().setAttribute("LastAlert", alert);
+		String recipe = Recipes.get("showAlert", new Date(alert.getTimeRaised()), alert.getName());
+		return getResponseNoEndSession(recipe, "Alert!");
+	}
+
+	protected SpeechletResponse getSuggestion(Intent intent) {
+		QuestionType lastQuestion = getLastQuestion();
+		switch (lastQuestion) {
+		case ShowFirstAlert:
+			Object obj = getSession().getAttribute("LastAlert");
+			if (obj != null) {
+				Alert alert = (Alert)obj;
+				//				if (alert.getName().contains("Memory")) {
+				if (true) {
+					ArrayList<Suggestion> suggestions = new ArrayList<>();
+					suggestions.add(Suggestion.ADD_MEMORY);
+					suggestions.add(Suggestion.DEPLOY_NEW_NODE);
+					suggestions.add(Suggestion.IGNORE_IT);
+
+					setLastQuestion(QuestionType.Suggestion);
+					getSession().setAttribute("Suggestions", suggestions);
+
+					String recipe = Recipes.get("showSuggestions", Suggestion.getSuggestionTexts(suggestions.toArray(new Suggestion[0])));
+					return getResponseNoEndSession(recipe, "Suggestions");
+
+				} else {
+					// TODO return sorry I don't know
+				}
+			} else {
+				//TODO return what
+			}
+			break;
+		default:
+			//TODO return what?
+		}
+		String recipe = Recipes.get("showNoSuggestion");
+		return getResponseNoEndSession(recipe, "Sorry");
+	}
+
+	protected void setLastQuestion(QuestionType type) {
+		getSession().setAttribute("LastQuestion", type);
+	}
+	
+	protected QuestionType getLastQuestion() {
+		Object lq = getSession().getAttribute("LastQuestion");
+		return lq == null ? null : (QuestionType)lq;
 	}
 
 	private DeepSecurityClient getDeepSecurityClient() throws IOException {
