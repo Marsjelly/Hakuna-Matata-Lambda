@@ -69,6 +69,9 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 			} else if ("Suggestion".equals(intentName)) {
 				log.info("onIntent Suggestion");
 				return getSuggestion(intent);
+			} else if ("Option".equals(intentName)) {
+				log.info("onIntent Options");
+				return processOptions(intent);
 			} else if ("AMAZON.HelpIntent".equals(intentName)) {
 				return getHelp();
 			} else if ("AMAZON.StopIntent".equals(intentName)) {
@@ -244,7 +247,7 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		setLastQuestion(QuestionType.ShowFirstAlert);
 
 		Alert alert = alerts.get(0);
-		getSession().setAttribute("LastAlert", alert);
+		getSession().setAttribute("LastAlert", alert.getName());
 		String recipe = Recipes.get("showAlert", new Date(alert.getTimeRaised()), alert.getName());
 		return getResponseNoEndSession(recipe, "Alert!");
 	}
@@ -255,18 +258,18 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		case ShowFirstAlert:
 			Object obj = getSession().getAttribute("LastAlert");
 			if (obj != null) {
-				Alert alert = (Alert)obj;
-				//				if (alert.getName().contains("Memory")) {
+				String alert = (String)obj;
+				//TODO				if (alert.getName().contains("Memory")) {
 				if (true) {
 					ArrayList<Suggestion> suggestions = new ArrayList<>();
-					suggestions.add(Suggestion.ADD_MEMORY);
-					suggestions.add(Suggestion.DEPLOY_NEW_NODE);
-					suggestions.add(Suggestion.IGNORE_IT);
+					suggestions.add(Suggestion.getSuggestion("ADD_MEMORY"));
+					suggestions.add(Suggestion.getSuggestion("DEPLOY_NEW_NODE"));
+					suggestions.add(Suggestion.getSuggestion("IGNORE_IT"));
 
 					setLastQuestion(QuestionType.Suggestion);
-					getSession().setAttribute("Suggestions", suggestions);
+					getSession().setAttribute("Suggestions", Suggestion.concatSuggestions(suggestions));
 
-					String recipe = Recipes.get("showSuggestions", Suggestion.getSuggestionTexts(suggestions.toArray(new Suggestion[0])));
+					String recipe = Recipes.get("showSuggestions", Suggestion.getSuggestionTexts(suggestions));
 					return getResponseNoEndSession(recipe, "Suggestions");
 
 				} else {
@@ -283,13 +286,28 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		return getResponseNoEndSession(recipe, "Sorry");
 	}
 
+	protected SpeechletResponse processOptions(Intent intent) throws Exception {
+		Slot optionNumSlot = intent.getSlot("OptionNumber");
+		if (optionNumSlot != null && !optionNumSlot.getValue().isEmpty()) {
+			int op = Integer.valueOf(optionNumSlot.getValue()).intValue();
+			String suggestionKeys = (String)getSession().getAttribute("Suggestions");
+			String[] suggestionKeyArray = suggestionKeys.split(Suggestion.CONCAT);
+			String suggetionKey = suggestionKeyArray[op - 1];
+			Suggestion suggestion = Suggestion.getSuggestion(suggetionKey);
+			suggestion.takeAction();
+			String recipe = suggestion.getActionResponse();
+			return getResponseNoEndSession(recipe, "Action");
+		}
+		return getResponseNoEndSession(Recipes.get("NoAction"), "Action");
+	}
+
 	protected void setLastQuestion(QuestionType type) {
-		getSession().setAttribute("LastQuestion", type);
+		getSession().setAttribute("LastQuestion", type.toString());
 	}
 	
 	protected QuestionType getLastQuestion() {
 		Object lq = getSession().getAttribute("LastQuestion");
-		return lq == null ? null : (QuestionType)lq;
+		return lq == null ? null : QuestionType.valueOf((String)lq);
 	}
 
 	private DeepSecurityClient getDeepSecurityClient() throws IOException {
@@ -307,4 +325,5 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 	public void setSession(Session session) {
 		this.session = session;
 	}
+
 }
