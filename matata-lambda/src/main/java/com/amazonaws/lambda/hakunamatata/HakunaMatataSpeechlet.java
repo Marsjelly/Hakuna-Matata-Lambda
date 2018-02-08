@@ -26,6 +26,7 @@ import com.amazon.speech.speechlet.SpeechletV2;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+import com.amazon.speech.ui.SsmlOutputSpeech;
 import com.trendmicro.ds.platform.rest.object.alerts.Alert;
 import com.trendmicro.ds.platform.rest.object.alerts.ListAlertsResponse;
 import com.trendmicro.ds.platform.rest.object.util.HostStatusSummaryElement;
@@ -139,8 +140,10 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 
 		if (speechText != null) {
 			// If we have the recipe, return it to the user.
-			PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-			outputSpeech.setText(speechText);
+			//			PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
+			//			outputSpeech.setText(speechText);
+			SsmlOutputSpeech outputSpeech = new SsmlOutputSpeech();
+			outputSpeech.setSsml("<speak>" + speechText + "</speak>");
 
 			SimpleCard card = new SimpleCard();
 			card.setTitle(title);

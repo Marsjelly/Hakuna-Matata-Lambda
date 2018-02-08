@@ -91,7 +91,7 @@ public abstract class Suggestion {
 
 			@Override
 			String getActionResponse() {
-				return "I suggest ";
+				return "I'm just kidding. Are you sure?";
 			}
 
 		});
