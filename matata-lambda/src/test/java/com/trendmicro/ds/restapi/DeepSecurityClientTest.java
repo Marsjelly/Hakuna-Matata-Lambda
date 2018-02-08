@@ -1,6 +1,9 @@
 package com.trendmicro.ds.restapi;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -12,6 +15,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.trendmicro.ds.platform.rest.object.ListEventBasedTasksResponse;
 import com.trendmicro.ds.platform.rest.object.alerts.ListAlertsResponse;
+import com.trendmicro.ds.platform.rest.object.monitoring.JVMUsageElement;
+import com.trendmicro.ds.platform.rest.object.monitoring.JVMUsageListing;
 import com.trendmicro.ds.platform.rest.object.proxies.ListProxiesResponse;
 import com.trendmicro.ds.platform.rest.object.util.HostStatusSummaryElement;
 import com.trendmicro.ds.platform.rest.object.util.StatusSummaryElement;
@@ -22,7 +27,7 @@ public class DeepSecurityClientTest {
 	public void testConnection() throws Exception {
 		ListEventBasedTasksResponse listEventBasedTasks;
 		ListProxiesResponse listProxies;
-		try (DeepSecurityClient dsClient = new DeepSecurityClient("https://awsdsm.ddns.net/rest", "MasterAdmin", "P@ssw0rd", null)) {
+		try (DeepSecurityClient dsClient = getDSClient()) {
 			dsClient.disableTrustManager();
 			//			listEventBasedTasks = dsClient.listEventBasedTasks();
 
@@ -61,5 +66,23 @@ public class DeepSecurityClientTest {
 		String content = "{\"ListAlertsResponse\":{\"alerts\":[{\"id\":8,\"typeID\":99,\"name\":\"MemoryWarningThresholdExceeded\",\"description\":\"Thememorywarningthresholdhasbeenexceeded.Formoreinformationaboutthisandotheralerts,visittheDeepSecurityHelpCenterat:https://help.deepsecurity.trendmicro.com/\",\"dismissible\":false,\"severity\":\"warning\",\"managerNodeID\":1,\"timeRaised\":1517735113164,\"timeChanged\":1517735113164,\"targets\":[{\"urn\":\"urn:tmds:core::0:manager-node/1\"}]}]}}";
 		ListAlertsResponse readValue = mapper.readValue(content, ListAlertsResponse.class);
 		System.out.println(readValue.getAlerts().get(0).getName());
+	}
+
+	@Test
+	public void testGetJvmUsage() throws Exception {
+		try (DeepSecurityClient dsClient = getDSClient()) {
+			JVMUsageListing jvmUsage = dsClient.listJvmUsage(null, null, null);
+			List<JVMUsageElement> jvmOrderedList = jvmUsage.getUsages().stream().sorted((a, b) -> b.getTime().compareTo(a.getTime())).collect(Collectors.toList());
+			System.out.println(jvmOrderedList.get(1).getNativeCPUPercent());
+			System.out.println(jvmOrderedList.get(0).getNativeMemoryUsed());
+		}
+	}
+
+	private DeepSecurityClient getDSClient() throws IOException {
+		Properties prop = new Properties();
+		prop.load(this.getClass().getResourceAsStream("dsm.properties"));
+		DeepSecurityClient dsClient = new DeepSecurityClient(prop.getProperty("dsm.url"), prop.getProperty("dsm.user"), prop.getProperty("dsm.password"), null);
+		dsClient.disableTrustManager();
+		return dsClient;
 	}
 }

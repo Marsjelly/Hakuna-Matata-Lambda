@@ -54,6 +54,7 @@ import com.trendmicro.ds.platform.rest.object.CreateEventBasedTaskResponse;
 import com.trendmicro.ds.platform.rest.object.DSCredentials;
 import com.trendmicro.ds.platform.rest.object.ListEventBasedTasksResponse;
 import com.trendmicro.ds.platform.rest.object.alerts.ListAlertsResponse;
+import com.trendmicro.ds.platform.rest.object.monitoring.JVMUsageListing;
 import com.trendmicro.ds.platform.rest.object.monitoring.TenantDatabaseUsageListing;
 import com.trendmicro.ds.platform.rest.object.monitoring.TenantHostProtectionListing;
 import com.trendmicro.ds.platform.rest.object.proxies.ListProxiesResponse;
@@ -207,6 +208,13 @@ public class DeepSecurityClient implements AutoCloseable {
 		return withSession((s) -> {
 			IMonitoringAPI monitoringClient = clientFor(IMonitoringAPI.class);
 			return monitoringClient.listHostProtection(tenantName, tenantID, from, to, s);
+		});
+	}
+
+	public JVMUsageListing listJvmUsage(Integer managerNodeID, Date fromDate, Date toDate) throws Exception {
+		return withSession((s) -> {
+			IMonitoringAPI monitoringClient = clientFor(IMonitoringAPI.class);
+			return monitoringClient.listJvmUsage(managerNodeID, fromDate, toDate, s);
 		});
 	}
 
