@@ -4,6 +4,7 @@ package com.amazonaws.lambda.hakunamatata;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -23,12 +24,18 @@ import com.amazon.speech.speechlet.SessionEndedRequest;
 import com.amazon.speech.speechlet.SessionStartedRequest;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.amazon.speech.speechlet.SpeechletV2;
+import com.amazon.speech.speechlet.interfaces.audioplayer.AudioItem;
+import com.amazon.speech.speechlet.interfaces.audioplayer.PlayBehavior;
+import com.amazon.speech.speechlet.interfaces.audioplayer.Stream;
+import com.amazon.speech.speechlet.interfaces.audioplayer.directive.PlayDirective;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
 import com.amazon.speech.ui.SsmlOutputSpeech;
 import com.trendmicro.ds.platform.rest.object.alerts.Alert;
 import com.trendmicro.ds.platform.rest.object.alerts.ListAlertsResponse;
+import com.trendmicro.ds.platform.rest.object.monitoring.JVMUsageElement;
+import com.trendmicro.ds.platform.rest.object.monitoring.JVMUsageListing;
 import com.trendmicro.ds.platform.rest.object.util.HostStatusSummaryElement;
 import com.trendmicro.ds.platform.rest.object.util.StatusSummaryElement;
 import com.trendmicro.ds.restapi.DeepSecurityClient;
@@ -55,9 +62,31 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		String intentName = (intent != null) ? intent.getName() : null;
 
 		try {
-			if ("DSMStatus".equals(intentName)) {
+			if ("NiHao".equals(intentName)) {
+				log.info("onIntent NiHao");
+				Stream stream = new Stream();
+				stream.setUrl("https://s3.amazonaws.com/jack-test/what_can_i_do.mp3");
+				stream.setOffsetInMilliseconds(0);
+				stream.setToken("ssss");
+				AudioItem audioItem = new AudioItem();
+				audioItem.setStream(stream);
+				PlayDirective playDir = new PlayDirective();
+				playDir.setAudioItem(audioItem);
+				playDir.setPlayBehavior(PlayBehavior.REPLACE_ALL);
+
+				PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
+				outputSpeech.setText("Ni how!");
+
+				SpeechletResponse response = SpeechletResponse.newTellResponse(outputSpeech);
+				response.setDirectives(Collections.singletonList(playDir));
+				response.setNullableShouldEndSession(true);
+				return response;
+			} else if ("DSMStatus".equals(intentName)) {
 				log.info("onIntent DSMStatus");
 				return getDSMStatus(intent);
+			} else if ("DSMUsage".equals(intentName)) {
+				log.info("onIntent DSMUsage");
+				return getDSMUsage(intent);
 			} else if ("DSMAlert".equals(intentName)) {
 				log.info("onIntent DSMAlert");
 				return getDSMAlert(intent);
@@ -200,6 +229,40 @@ public class HakunaMatataSpeechlet implements SpeechletV2 {
 		HostStatusSummaryElement s = statusSummary.getHostStatusSummary();
 		String recipe = Recipes.get("dsmStatusSummary", s.getCriticalHosts(), s.getWarningHosts(), s.getOnlineHosts(), s.getUnmanageHosts());
 		return getResponseNoEndSession(recipe, "DSM Status");
+	}
+
+	protected SpeechletResponse getDSMUsage(Intent intent) throws Exception {
+		Slot typeSlot1 = intent.getSlot("FirstDSMUsageType");
+		Slot typeSlot2 = intent.getSlot("SecondDSMUsageType");
+		String recipe = Recipes.get("NoAction");
+		if (typeSlot1 != null && typeSlot1.getValue() != null && !typeSlot1.getValue().isEmpty()) {
+			JVMUsageListing jvmUsage;
+			try (DeepSecurityClient dsClient = getDeepSecurityClient()) {
+				jvmUsage = dsClient.listJvmUsage(null, null, null);
+			}
+			List<JVMUsageElement> jvmOrderedList = jvmUsage.getUsages().stream().sorted((a, b) -> b.getTime().compareTo(a.getTime())).collect(Collectors.toList());
+			JVMUsageElement usage = jvmOrderedList.get(0);
+			log.info("Type slot: " + typeSlot1.getValue());
+			if ("CPU".equalsIgnoreCase(typeSlot1.getValue())) {
+				recipe = Recipes.get("usage", typeSlot1.getValue(), usage.getNativeCPUPercent() + "%");
+			} else if ("Memory".equalsIgnoreCase(typeSlot1.getValue().toLowerCase())) {
+				recipe = Recipes.get("usage", typeSlot1.getValue(), usage.getNativeMemoryUsedPercent() + "%");
+			} else if ("Heap".equalsIgnoreCase(typeSlot1.getValue())) {
+				recipe = Recipes.get("usage", typeSlot1.getValue(), usage.getHeapUsed() / 1024 / 1024 + " megabytes");
+			}
+
+			if (typeSlot2 != null && typeSlot2.getValue() != null && !typeSlot2.getValue().isEmpty()) {
+				log.info("Type slot: " + typeSlot2.getValue());
+				if ("CPU".equalsIgnoreCase(typeSlot2.getValue())) {
+					recipe += Recipes.get("usage", typeSlot2.getValue(), usage.getNativeCPUPercent() + "%");
+				} else if ("Memory".equalsIgnoreCase(typeSlot2.getValue().toLowerCase())) {
+					recipe += Recipes.get("usage", typeSlot2.getValue(), usage.getNativeMemoryUsedPercent() + "%");
+				} else if ("Heap".equalsIgnoreCase(typeSlot2.getValue())) {
+					recipe += Recipes.get("usage", typeSlot2.getValue(), usage.getHeapUsed() / 1024 / 1024 + " megabytes");
+				}
+			}
+		}
+		return getResponseNoEndSession(recipe, "DSM Usages");
 	}
 
 	protected SpeechletResponse getDSMAlert(Intent intent) throws Exception {

@@ -24,6 +24,7 @@ public final class Recipes {
 		recipes.put("showSuggestions", "My suggestion is: %s Please choose one.");
 		recipes.put("showNoSuggestion", "Sorry, I don't have any suggestion to this. What else can I help you?");
 		recipes.put("NoAction", "Sorry, I don't know what to do.");
+		recipes.put("usage", "<p>Current %s usage is %s</p>");
 	}
 
 	public static String get(String item, Object... strings) {
